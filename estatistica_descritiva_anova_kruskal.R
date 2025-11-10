@@ -3,7 +3,7 @@
 # Autor: Eng. Florestal MSc. Sally Deborah P. da Silva
 #
 # Descrição: Executa análise estatística descritiva incluindo testes
-#             de normalidade (Shapiro-Wilk), ANOVA unidirecional com Tukey,
+#             de normalidade (Shapiro-Wilk), ANOVA unidirecional com Tukey
 #             e teste não-paramétrico de Kruskal-Wallis com Dunn.
 # Linguagem: R
 # Dependências: tidyverse, car, FSA
@@ -11,7 +11,7 @@
 # ================================================================
 
 # ------------------------------------------------------------
-# 1. Carregar pacotes necessários
+# 1. Carregar pacotes
 # ------------------------------------------------------------
 library(tidyverse)
 library(car)
@@ -20,69 +20,59 @@ library(FSA)
 # ------------------------------------------------------------
 # 2. Importar dados
 # ------------------------------------------------------------
-arquivo <- "data/processed/Prot_raiz.csv"
-
-dados <- read.csv(
-  arquivo, header = TRUE, sep = ";", dec = ".",
-  stringsAsFactors = FALSE
-)
+arquivo <- "data/processed/dados_anova.csv"
+dados <- read.csv(arquivo, header = TRUE, sep = ";", dec = ".", stringsAsFactors = FALSE)
 
 # ------------------------------------------------------------
-# 3. Converter dados para formato longo
+# 3. Converter para formato longo
 # ------------------------------------------------------------
 dados_long <- dados %>%
   pivot_longer(cols = starts_with("T"), names_to = "grupo", values_to = "valor")
 
 # ------------------------------------------------------------
-# 4. Teste de normalidade (Shapiro-Wilk) por grupo
+# 4. Teste de normalidade (Shapiro-Wilk)
 # ------------------------------------------------------------
-shapiro_teste_resultados <- dados_long %>%
+shapiro_res <- dados_long %>%
   group_by(grupo) %>%
   summarise(
-    shapiro_p_value = shapiro.test(valor)$p.value,
-    normalidade = ifelse(shapiro.test(valor)$p.value > 0.05, "Normal", "Não Normal")
+    p_value = shapiro.test(valor)$p.value,
+    normalidade = ifelse(p_value > 0.05, "Normal", "Não Normal"),
+    .groups = "drop"
   )
 
-print(shapiro_teste_resultados)
+print(shapiro_res)
 
 # ------------------------------------------------------------
-# 5. Selecionar método de comparação de médias
+# 5. Escolher método de comparação
 # ------------------------------------------------------------
-if (all(shapiro_teste_resultados$normalidade == "Normal")) {
-  cat("Todos os grupos apresentam distribuição normal. Executando ANOVA...\n")
+if (all(shapiro_res$normalidade == "Normal")) {
+  cat("Todos os grupos apresentam distribuição normal → ANOVA\n")
   
-  # ANOVA unidirecional
-  anova_resultado <- aov(valor ~ grupo, data = dados_long)
-  print(summary(anova_resultado))
+  anova_res <- aov(valor ~ grupo, data = dados_long)
+  print(summary(anova_res))
   
-  # Teste de Tukey
-  tukey_resultado <- TukeyHSD(anova_resultado)
-  print(tukey_resultado)
-  plot(tukey_resultado)
+  tukey_res <- TukeyHSD(anova_res)
+  print(tukey_res)
+  plot(tukey_res)
   
-  # Homogeneidade de variâncias (Levene)
-  levene_resultado <- leveneTest(valor ~ grupo, data = dados_long)
-  print(levene_resultado)
+  levene_res <- leveneTest(valor ~ grupo, data = dados_long)
+  print(levene_res)
   
 } else {
-  cat("Pelo menos um grupo não é normal. Executando Kruskal-Wallis...\n")
+  cat("Pelo menos um grupo não é normal → Kruskal-Wallis\n")
   
-  # Teste de Kruskal-Wallis
-  kruskal_resultado <- kruskal.test(valor ~ grupo, data = dados_long)
-  print(kruskal_resultado)
+  kruskal_res <- kruskal.test(valor ~ grupo, data = dados_long)
+  print(kruskal_res)
   
-  # Teste post-hoc de Dunn (Bonferroni)
-  dunn_resultado <- dunnTest(valor ~ grupo, data = dados_long, method = "bonferroni")
-  print(dunn_resultado)
+  dunn_res <- dunnTest(valor ~ grupo, data = dados_long, method = "bonferroni")
+  print(dunn_res)
 }
 
 # ------------------------------------------------------------
 # 6. Exportar resultados
 # ------------------------------------------------------------
-dir_saida <- "results/estatistica_descritiva"
+dir_saida <- "results/anova_kruskal"
 if (!dir.exists(dir_saida)) dir.create(dir_saida, recursive = TRUE)
+write.csv(shapiro_res, file.path(dir_saida, "normalidade.csv"), row.names = FALSE)
 
-# Salvar resultados de normalidade
-write.csv(shapiro_teste_resultados, file.path(dir_saida, "shapiro_resultados.csv"), row.names = FALSE)
-
-cat("Resultados exportados para:", dir_saida, "\n")
+cat("✅ Resultados exportados para:", dir_saida, "\n")

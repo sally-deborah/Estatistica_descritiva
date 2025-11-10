@@ -4,7 +4,7 @@
 #
 # Descrição: Calcula estatísticas descritivas (média, mediana, desvio,
 #             mínimo, máximo, coeficiente de variação) e testa a
-#             normalidade das variáveis numéricas (Shapiro-Wilk).
+#             normalidade (Shapiro-Wilk) das variáveis numéricas.
 # Linguagem: R
 # Dependências: tidyverse
 # Data: 2025-10-27
@@ -18,7 +18,7 @@ library(tidyverse)
 # ------------------------------------------------------------
 # 2. Importar dados
 # ------------------------------------------------------------
-arquivo <- "data/processed/xx.csv"
+arquivo <- "data/processed/seus_dados.csv"
 
 dados <- read.csv(
   arquivo, sep = ";", dec = ".", header = TRUE,
@@ -43,7 +43,7 @@ estatisticas <- dados %>%
     .names = "{.col}_{.fn}"
   ))
 
-print("📊 Estatística descritiva com CV%:")
+print("📊 Estatísticas descritivas com CV%:")
 print(estatisticas)
 
 # ------------------------------------------------------------
@@ -72,8 +72,8 @@ cat("✅ Resultados exportados para:", dir_saida, "\n")
 # ------------------------------------------------------------
 # 6. (Opcional) ANOVA e Kruskal-Wallis
 # ------------------------------------------------------------
-# if (length(unique(dados$classe)) > 1) {
-#   for (var in names(dados)[-1]) {
+# if ("classe" %in% names(dados) && length(unique(dados$classe)) > 1) {
+#   for (var in names(dados)[sapply(dados, is.numeric)]) {
 #     cat("\nAnalisando variável:", var, "\n")
 #     anova_res <- aov(dados[[var]] ~ dados$classe)
 #     print(summary(anova_res))
@@ -81,5 +81,5 @@ cat("✅ Resultados exportados para:", dir_saida, "\n")
 #     print(kruskal_res)
 #   }
 # } else {
-#   cat("⚠️ Apenas uma classe presente. ANOVA/Kruskal-Wallis não aplicável.\n")
+#   cat("⚠️ Nenhuma variável de classe detectada ou apenas um grupo.\n")
 # }
